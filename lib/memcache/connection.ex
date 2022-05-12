@@ -129,7 +129,7 @@ defmodule Memcache.Connection do
       %{commands: commands},
       fn ->
         {result, %{server: server}} = callback.()
-        {result, %{server: server, results: normalize_result(result}}
+        {result, %{server: server, results: normalize_result(result)}}
       end
     )
   end
