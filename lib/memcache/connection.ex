@@ -124,28 +124,14 @@ defmodule Memcache.Connection do
   end
 
   defp with_telemetry(commands, callback) do
-    telemetry_metadata = %{
-      commands: commands,
-      start_time: System.system_time()
-    }
-
-    start_time = System.monotonic_time()
-    {result, %{server: server}} = callback.()
-    end_time = System.monotonic_time()
-    telemetry_metadata = Map.put(telemetry_metadata, :server, server)
-    measurements = %{elapsed_time: end_time - start_time}
-
-    case normalize_result(result) do
-      {:error, reason} ->
-        telemetry_metadata = Map.put(telemetry_metadata, :reason, reason)
-        :ok = :telemetry.execute([:memcachex, :commands_error], measurements, telemetry_metadata)
-
-      {:ok, results} ->
-        telemetry_metadata = Map.put(telemetry_metadata, :results, results)
-        :ok = :telemetry.execute([:memcachex, :commands], measurements, telemetry_metadata)
-    end
-
-    result
+    :telemetry.span(
+      [:memcachex, :command],
+      %{commands: commands},
+      fn ->
+        {result, %{server: server}} = callback.()
+        {result, %{server: server, results: normalize_result(result}}
+      end
+    )
   end
 
   defp normalize_result(result) do
